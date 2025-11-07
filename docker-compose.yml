@@ -1,0 +1,243 @@
+version: '3.8'
+
+services:
+  # MongoDB Replica Set - Node 1 (Primary)
+  mongo1:
+    image: mongo:7.0
+    container_name: mongo1
+    hostname: mongo1
+    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo1_data:/data/db
+      - mongo1_config:/data/configdb
+      - ./scripts:/scripts
+    networks:
+      - mongo-cluster
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Replica Set - Node 2
+  mongo2:
+    image: mongo:7.0
+    container_name: mongo2
+    hostname: mongo2
+    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo2_data:/data/db
+      - mongo2_config:/data/configdb
+      - ./scripts:/scripts
+    networks:
+      - mongo-cluster
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Replica Set - Node 3
+  mongo3:
+    image: mongo:7.0
+    container_name: mongo3
+    hostname: mongo3
+    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo3_data:/data/db
+      - mongo3_config:/data/configdb
+      - ./scripts:/scripts
+    networks:
+      - mongo-cluster
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Exporter for Prometheus (Node 1)
+  mongodb-exporter1:
+    image: percona/mongodb_exporter:0.40
+    container_name: mongodb-exporter1
+    command:
+      - '--mongodb.uri=mongodb://admin:password123@mongo1:27017'
+      - '--discovering-mode'
+      - '--collect-all'
+    ports:
+      - "9216:9216"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - mongo1
+
+  # MongoDB Exporter for Prometheus (Node 2)
+  mongodb-exporter2:
+    image: percona/mongodb_exporter:0.40
+    container_name: mongodb-exporter2
+    command:
+      - '--mongodb.uri=mongodb://admin:password123@mongo2:27017'
+      - '--discovering-mode'
+      - '--collect-all'
+    ports:
+      - "9217:9216"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - mongo2
+
+  # MongoDB Exporter for Prometheus (Node 3)
+  mongodb-exporter3:
+    image: percona/mongodb_exporter:0.40
+    container_name: mongodb-exporter3
+    command:
+      - '--mongodb.uri=mongodb://admin:password123@mongo3:27017'
+      - '--discovering-mode'
+      - '--collect-all'
+    ports:
+      - "9218:9216"
+    networks:
+      - mongo-cluster
+    depends_on:
+      - mongo3
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - mongo-cluster
+    depends_on:
+      - mongodb-exporter1
+      - mongodb-exporter2
+      - mongodb-exporter3
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - mongo-cluster
+    depends_on:
+      - prometheus
+
+  # Pumba for network chaos engineering
+  pumba:
+    image: gaiaadm/pumba:latest
+    container_name: pumba
+    hostname: pumba
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./chaos:/chaos
+    networks:
+      - mongo-cluster
+    command: ["--log-level", "info", "help"]
+    privileged: true
+
+  # Stress testing tool container
+  stress-ng:
+    image: alexeiled/stress-ng:latest
+    container_name: stress-ng
+    networks:
+      - mongo-cluster
+    command: ["--help"]
+
+  # Load generator and test orchestrator
+  test-orchestrator:
+    build:
+      context: ./test-orchestrator
+      dockerfile: Dockerfile
+    container_name: test-orchestrator
+    hostname: test-orchestrator
+    volumes:
+      - ./test-orchestrator:/app
+      - ./results:/results
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mongo-cluster
+    environment:
+      - MONGODB_URI=mongodb://admin:password123@mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
+      - RESULTS_DIR=/results
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    command: ["tail", "-f", "/dev/null"]  # Keep container running
+
+networks:
+  mongo-cluster:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  mongo1_data:
+  mongo1_config:
+  mongo2_data:
+  mongo2_config:
+  mongo3_data:
+  mongo3_config:
+  prometheus_data:
+  grafana_data:

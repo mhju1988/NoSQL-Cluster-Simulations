@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'nosql-simulation'
+    replica_set: 'rs0'
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # MongoDB Exporter - Node 1
+  - job_name: 'mongodb-node1'
+    static_configs:
+      - targets: ['mongodb-exporter1:9216']
+        labels:
+          instance: 'mongo1'
+          node: 'node1'
+          role: 'primary'
+
+  # MongoDB Exporter - Node 2
+  - job_name: 'mongodb-node2'
+    static_configs:
+      - targets: ['mongodb-exporter2:9216']
+        labels:
+          instance: 'mongo2'
+          node: 'node2'
+          role: 'secondary'
+
+  # MongoDB Exporter - Node 3
+  - job_name: 'mongodb-node3'
+    static_configs:
+      - targets: ['mongodb-exporter3:9216']
+        labels:
+          instance: 'mongo3'
+          node: 'node3'
+          role: 'secondary'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Container metrics (cAdvisor if available)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: []

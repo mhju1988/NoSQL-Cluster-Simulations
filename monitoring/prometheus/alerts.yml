@@ -1,0 +1,63 @@
+groups:
+  - name: mongodb_alerts
+    interval: 30s
+    rules:
+      # Node Down Alert
+      - alert: MongoDBNodeDown
+        expr: up{job=~"mongodb-node.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MongoDB node {{ $labels.instance }} is down"
+          description: "MongoDB node {{ $labels.instance }} has been down for more than 1 minute."
+
+      # High Replication Lag
+      - alert: HighReplicationLag
+        expr: mongodb_mongod_replset_member_replication_lag > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High replication lag on {{ $labels.instance }}"
+          description: "Replication lag is {{ $value }} seconds on {{ $labels.instance }}."
+
+      # No Primary in Replica Set
+      - alert: NoPrimaryInReplicaSet
+        expr: sum(mongodb_mongod_replset_member_state{state="1"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No primary node in replica set"
+          description: "The replica set has no primary node."
+
+      # High Operation Latency
+      - alert: HighOperationLatency
+        expr: rate(mongodb_mongod_op_latencies_latency_total[5m]) > 1000000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High operation latency on {{ $labels.instance }}"
+          description: "Operation latency is high on {{ $labels.instance }}."
+
+      # Connection Limit Approaching
+      - alert: ConnectionLimitApproaching
+        expr: (mongodb_ss_connections{conn_type="current"} / mongodb_ss_connections{conn_type="available"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Connection limit approaching on {{ $labels.instance }}"
+          description: "{{ $labels.instance }} is using {{ $value | humanizePercentage }} of available connections."
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (mongodb_ss_mem_resident / mongodb_ss_mem_virtual) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
