@@ -13,15 +13,19 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}Step 1: Starting Docker containers...${NC}"
+echo -e "${YELLOW}Step 1: Generating MongoDB keyFile...${NC}"
+bash ./scripts/generate-keyfile.sh
+
+echo ""
+echo -e "${YELLOW}Step 2: Starting Docker containers...${NC}"
 docker-compose up -d
 
 echo ""
-echo -e "${YELLOW}Step 2: Waiting for services to initialize (30s)...${NC}"
+echo -e "${YELLOW}Step 3: Waiting for services to initialize (30s)...${NC}"
 sleep 30
 
 echo ""
-echo -e "${YELLOW}Step 3: Initializing MongoDB replica set...${NC}"
+echo -e "${YELLOW}Step 4: Initializing MongoDB replica set...${NC}"
 docker exec mongo1 bash /scripts/init-replica-set.sh
 
 echo ""

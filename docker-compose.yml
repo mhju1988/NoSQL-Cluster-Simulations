@@ -6,18 +6,20 @@ services:
     image: mongo:7.0
     container_name: mongo1
     hostname: mongo1
-    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    command: mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /data/mongodb-keyfile --auth
     ports:
       - "27017:27017"
     volumes:
       - mongo1_data:/data/db
       - mongo1_config:/data/configdb
       - ./scripts:/scripts
+      - ./mongodb-keyfile/mongodb-keyfile:/data/mongodb-keyfile:ro
     networks:
       - mongo-cluster
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
+    user: "999:999"
     deploy:
       resources:
         limits:
@@ -37,18 +39,20 @@ services:
     image: mongo:7.0
     container_name: mongo2
     hostname: mongo2
-    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    command: mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /data/mongodb-keyfile --auth
     ports:
       - "27018:27017"
     volumes:
       - mongo2_data:/data/db
       - mongo2_config:/data/configdb
       - ./scripts:/scripts
+      - ./mongodb-keyfile/mongodb-keyfile:/data/mongodb-keyfile:ro
     networks:
       - mongo-cluster
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
+    user: "999:999"
     deploy:
       resources:
         limits:
@@ -68,18 +72,20 @@ services:
     image: mongo:7.0
     container_name: mongo3
     hostname: mongo3
-    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    command: mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /data/mongodb-keyfile --auth
     ports:
       - "27019:27017"
     volumes:
       - mongo3_data:/data/db
       - mongo3_config:/data/configdb
       - ./scripts:/scripts
+      - ./mongodb-keyfile/mongodb-keyfile:/data/mongodb-keyfile:ro
     networks:
       - mongo-cluster
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
+    user: "999:999"
     deploy:
       resources:
         limits:
