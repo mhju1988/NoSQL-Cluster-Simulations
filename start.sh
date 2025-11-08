@@ -26,7 +26,8 @@ sleep 30
 
 echo ""
 echo -e "${YELLOW}Step 4: Initializing MongoDB replica set...${NC}"
-docker exec mongo1 bash /scripts/init-replica-set.sh
+# Use MSYS_NO_PATHCONV to prevent Git Bash from converting /scripts path on Windows
+MSYS_NO_PATHCONV=1 docker exec mongo1 bash /scripts/init-replica-set.sh
 
 echo ""
 echo -e "${GREEN}✓ Setup complete!${NC}"
