@@ -13,7 +13,8 @@ fi
 openssl rand -base64 756 > "$KEYFILE_PATH"
 
 # Set correct permissions (must be 400 or 600)
-chmod 400 "$KEYFILE_PATH"
+# Using 600 for better compatibility with Docker volume mounts
+chmod 600 "$KEYFILE_PATH"
 
 echo "MongoDB keyFile generated successfully at $KEYFILE_PATH"
 echo "Permissions: $(ls -l $KEYFILE_PATH | awk '{print $1}')"

@@ -19,7 +19,6 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
-    user: "999:999"
     deploy:
       resources:
         limits:
@@ -52,7 +51,6 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
-    user: "999:999"
     deploy:
       resources:
         limits:
@@ -85,7 +83,6 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password123
-    user: "999:999"
     deploy:
       resources:
         limits:
